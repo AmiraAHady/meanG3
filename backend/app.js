@@ -11,6 +11,7 @@
 // console.log(validator.isEmail('amira@gmail.com'));
 const express = require("express");
 var mongoose = require("mongoose");
+var cors = require("cors");
 var Product = require("./models/product");
 var server = express();
 
@@ -21,6 +22,7 @@ var server = express();
 server.use(express.urlencoded({ extended: true }));
 
 server.use(express.json());
+server.use(cors());
 
 //connect to database
 
@@ -35,13 +37,35 @@ mongoose
     console.log("error connection to database");
   });
 
+// function sayHello(req,res,next){
+//   console.log('hello from node');
+//   next()
+// }
+
+// server.use(sayHello)
+//CRUD
 //  /products  ->get(),
 //apis ->functions
-//1
+//1cl
+//localhost:3002/products?pageNumber=2&pageSize=5;
 server.get("/products", function (req, res) {
-  Product.find()
+  var pageNumber = +req.query.pageNumber;
+  var pageSize = +req.query.pageSize;
+  var myQuery = Product.find();
+  var fetchedProducts;
+  if (pageNumber && pageSize) {
+    myQuery.skip(pageSize * (pageNumber - 1)).limit(pageSize);
+  }
+  myQuery
     .then((productsData) => {
-      res.send(productsData);
+      fetchedProducts = productsData;
+      return Product.count();
+    })
+    .then((productsCount) => {
+      res.send({
+        totalProducts: productsCount,
+        products: fetchedProducts,
+      });
     })
     .catch((err) => {
       res.send({
@@ -63,27 +87,27 @@ server.get("/product/:id", function (req, res) {
     });
 });
 
-server.post("/addProduct", function (req, res) {
-  let productData = req.body;
-  let newProduct = new Product({
-    id: +productData.id,
-    title: productData.title,
-    price: +productData.price,
-    image: productData.image,
-    isAvaliable: productData.isAvaliable,
-  });
+// server.post("/addProduct", function (req, res) {
+//   let productData = req.body;
+//   let newProduct = new Product({
+//     id: +productData.id,
+//     title: productData.title,
+//     price: +productData.price,
+//     image: productData.image,
+//     isAvaliable: productData.isAvaliable,
+//   });
 
-  newProduct
-    .save()
-    .then((msg) => {
-      res.send({
-        msg: "product added successfuly",
-      });
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-});
+//   newProduct
+//     .save()
+//     .then((msg) => {
+//       res.send({
+//         msg: "product added successfuly",
+//       });
+//     })
+//     .catch((err) => {
+//       console.log(err);
+//     });
+// });
 
 server.put("/product/:id", function (req, res) {
   let prodId = +req.params.id;
